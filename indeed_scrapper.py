@@ -25,17 +25,6 @@ chrome_options = uc.ChromeOptions()
 chrome_options.add_argument(f'--proxy-server={PROXY}')
 
 drivers_dict={}   
-def scraping_function(link):
-    try:
-        thread_name= threading.current_thread().name
-            #sometime we are going to have different thread name in each iteration so a little regex might help
-        thread_name = re.sub("ThreadPoolExecutor-(\d*)_(\d*)", r"ThreadPoolExecutor-0_\2", thread_name)
-        print(f"re.sub -> {thread_name}")
-        driver = drivers_dict[thread_name]
-    except KeyError:
-        drivers_dict[threading.current_thread().name] = uc.Chrome(options=options,executable_path=PATH)
-        driver = drivers_dict[threading.current_thread().name]
-    driver.get(link)
 
 def driverConfig():
     chrome_options = Options()
@@ -54,13 +43,22 @@ cities = ['New York, NY', 'Houston, TX']
 position = 'Restaurant'
 no_of_pages = 20
 
+def uniqueJobID(city, page, count):
+    current_time = datetime.now()
+    if "TX" in city:
+        jobID = "TX"+str(current_time.day)+str(f"{current_time.month:02}")+str(current_time.year)+str(current_time.strftime('%A')).upper()[:3]+str(page)+f"{count:02}"
+    if "NY" in city:
+        jobID = "NY"+str(current_time.day)+str(f"{current_time.month:02}")+str(current_time.year)+str(current_time.strftime('%A')).upper()[:3]+str(page)+f"{count:02}"
+    
+    return str(jobID)
+
 def main_scrapper(cities, position, no_of_pages):
     total_jobs = 0
     job_data = []
     for city in cities:
         print(f"Scrapping for {city}, position/skill: {position}")
         for page in range(0, no_of_pages*10, 10):
-            driver.get(f'https://www.indeed.com/jobs?q={position}&l={city}&sort=date&start={page}')
+            driver.get(f'https://www.indeed.com/jobs?q={position}&l={city}&fromage=1&sort=date&start={page}')
             time.sleep(random.uniform(8.5, 10.9))
 
             try:
@@ -71,16 +69,16 @@ def main_scrapper(cities, position, no_of_pages):
 
             soup = BeautifulSoup(driver.page_source, features="html.parser")
             divs = soup.find_all('div', 'slider_item css-kyg8or eu4oa1w0')
-            
+            count = 0
             total_jobs += len(divs)
             print(f"Total Jobs Scrapped: {total_jobs}")
             for item in divs:
-
+                count += 1
                 # Getting the Job Title
                 title = item.find('a').text.strip()
-                type_of_job = ''
-                salary = ''
-                schedule = ''
+                type_of_job = None
+                salary = None
+                schedule = None
                 # Getting the job type
                 try:
                     all_metadata = item.find('div', 'heading6 tapItem-gutter metadataContainer noJEMChips salaryOnly')
@@ -90,7 +88,7 @@ def main_scrapper(cities, position, no_of_pages):
                             salary = element.strip()
                             rows.remove(element)
                         else:
-                            salary = ''
+                            salary = None
                     for element in rows:
                         if 'time' in element:
                             if '+1' in element:
@@ -100,54 +98,61 @@ def main_scrapper(cities, position, no_of_pages):
                             rows.remove(element)
 
                         else:
-                            type_of_job = ''
+                            type_of_job = None
                     if len(rows) > 0:
                         schedule = rows[0]
 
                     else:
-                        schedule = ''
+                        schedule = None
                 except:
                     try:
                         salary = item.find('div', 'attribute_snippet').text.strip()
-                        type_of_job = ''
+                        type_of_job = None
                     except:
-                        salary = ''
+                        salary = None
 
                 try:
                     company = item.find('span', 'companyName').text.strip()
                 except:
-                    company = ''
+                    company = None
 
                 #Getting the Location
                 try:
                     location = item.find('div', 'companyLocation').text.strip()
                 except:
-                    location = ''
+                    location = None
 
                 #Getting the link
                 try:
                     link = 'https://www.indeed.com/' + item.h2.a.get('href')
                 except:
-                    link = ''
+                    link = None
 
                 # Date Posted
                 try:
                     date_posted = item.find('span', 'date').text.strip()
                 except:
-                    date_posted = ''
+                    date_posted = None
 
                 # Current Date
                 try: 
                     current_date = datetime.today().strftime('%y-%m-%d')
                 except:
-                    current_date = ''
+                    current_date = None
 
                 try:
                     description  = item.find('div', 'job-snippet').text.strip().replace('\n', ' ')
                 except:
-                    description = ''
+                    description = None
+                    
+                try:
+                    jobID = uniqueJobID(city, page, count)
+                except:
+                    jobID = None
+                print(jobID)
 
                 data = {
+                    'JobID' : jobID,
                     'Title' : title,
                     'Job_Type' : type_of_job,
                     'Company' : company,
@@ -174,14 +179,14 @@ print("Scrpping Complete!")
 
 # Connecting ot db
 print("Connecting to MongoDB..")
-connection = MongoClient("mongodb://localhost:27017")
-db = connection["IndeedJobPostDB"]
+connection = MongoClient("mongodb+srv://doadmin:g90l61F8EnQJ3m45@db-mongodb-blr1-90175-4f55a9f9.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=db-mongodb-blr1-90175")
+db = connection["JobsDB"]
 print("Connected to MongoDB successfully.")
 
 # inserting data into db
 print("Inserting data into database.")
 data = df.to_dict(orient="records")
-db.Job_Posts.insert_many(data, ordered=False)
+db.JobDetails.insert_many(data, ordered=False)
 
 print("Data Insertion Complete!")
 print("Scrapping Complete.")
