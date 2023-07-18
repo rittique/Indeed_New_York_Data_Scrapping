@@ -28,7 +28,7 @@ def driverConfig():
     chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
     chrome_options.add_experimental_option('useAutomationExtension', True)
     
-    driver = uc.Chrome(executable_path='../google-chrome-stable_current_amd64.deb', options=chrome_options,service_args=['--quiet'])
+    driver = uc.Chrome(executable_path='../../google-chrome-stable_current_amd64.deb', options=chrome_options,service_args=['--quiet'])
 
     return driver
 
