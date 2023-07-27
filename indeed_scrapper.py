@@ -1,7 +1,9 @@
+import time
+start = time.time()
 import pandas as pd
 import numpy as np
 import random
-import time
+
 import pymongo
 from pymongo import MongoClient
 from parsel import Selector
@@ -17,28 +19,31 @@ from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
 import itertools
 
-def driverConfig():
-    chrome_options = uc.ChromeOptions()
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--headless')
-    chrome_options.add_argument('--enable-javascript')
-    chrome_options.add_argument('--disable-gpu')
-    user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Safari/605.1.15'
-    chrome_options.add_argument('User-Agent={0}'.format(user_agent))
-    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    chrome_options.add_experimental_option('useAutomationExtension', True)
-    
-    driver = uc.Chrome(executable_path='../../google-chrome-stable_current_amd64.deb', options=chrome_options,service_args=['--quiet'])
+chrome_options = Options()
 
-    return driver
+PROXY = "" # HOST:PORT
+
+chrome_options = uc.ChromeOptions()
+chrome_options.add_argument(f'--proxy-server={PROXY}')
 
 drivers_dict={}   
 
+def driverConfig():
+    chrome_options = Options()
+
+    PROXY = "" # HOST:PORT
+
+    chrome_options = uc.ChromeOptions()
+    chrome_options.add_argument(f'--proxy-server={PROXY}')
+
+    driver = uc.Chrome(executable_path=r'chromedriver', options=chrome_options)
+
+    return driver
+
 driver = driverConfig()
-driver.implicitly_wait(6.5)
 cities = ['New York, NY', 'Houston, TX']
 position = 'Restaurant'
-no_of_pages = 20
+no_of_pages = 10
 
 def uniqueJobID(city, page, count):
     current_time = datetime.now()
@@ -176,16 +181,19 @@ print("Scrpping Complete!")
 
 # Connecting ot db
 print("Connecting to MongoDB..")
-connection = MongoClient("mongodb+srv://doadmin:g90l61F8EnQJ3m45@db-mongodb-blr1-90175-4f55a9f9.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=db-mongodb-blr1-90175")
+connection = MongoClient("mongodb+srv://doadmin:8yt5032nIF1xd6O9@db-mongodb-blr1-90175-4f55a9f9.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=db-mongodb-blr1-90175", connect=False, serverSelectionTimeoutMS=300000)
 db = connection["JobsDB"]
 print("Connected to MongoDB successfully.")
+data = df.to_dict(orient="records")
 
 # inserting data into db
 print("Inserting data into database.")
-data = df.to_dict(orient="records")
-db.JobDetails.insert_many(data, ordered=False)
+for job in data:
+    db.JobDetails.insert_one(job)
 
 print("Data Insertion Complete!")
 print("Scrapping Complete.")
 
 driver.quit()
+end = time.time()
+print(f"Total time taken: {end - start}")
