@@ -16,6 +16,14 @@ print("Connected to the database successfully.")
 #df = df[df.Schedule.notnull()]
 #df = df[df.Salary.notnull()]
 
+def exceptionWait(exception, min):
+	if exception.strip() == "(#4) Application request limit reached":
+		print("-----------------------------------------------")
+		print(f"| Sleeping for {min} mintutes                    |\n")
+		print(f"| Will start the automation after {min} mintutes.|")
+		print("-----------------------------------------------")
+		time.sleep(min*60)
+
 def message(df, i, summary):
     return (
         f'**Test Post: {i}**\n'
