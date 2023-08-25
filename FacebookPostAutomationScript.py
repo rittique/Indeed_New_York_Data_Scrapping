@@ -4,6 +4,12 @@ import pymongo
 import time
 from pymongo import MongoClient
 from transformers import pipeline
+import gspread
+
+gc = gspread.service_account(filename = "jobapp-eb06c-270a71c74d88.json")
+KEY = "1nCT9zi1zic2SYKHsEMp9rm4rWA0bDTZcknXGWlZhrDc"
+
+workSheet = gc.open_by_key(KEY)
 
 connection = MongoClient("mongodb://localhost:27017")
 db = connection.IndeedJobPostDB
@@ -43,13 +49,11 @@ def message(df, i, summary):
     )
 
 groups = ["674232410710265", "658314902622656"] #NY, TX
-access_token = "EAAJHKZAZAZBPbsBO5t4D0jmbuVZBM41QJlvw8OB7ZASADxZA5F1RsSPBmbzzvcZBPyVBrE7T5qhJeasJ2kkkWwJ6H9Dro96ZCbpuhBGT2ZB9urGe0M2wscFemWtZB6VyEot2ZBSihFX1jQ5ZAoK26m65eQ3TicbZBoENSsiwuxweTnRZBJKTehz9J3ZAqeAg0vZA"
+access_token = "EAAJHKZAZAZBPbsBO8niM1nsPQz23X70xBOofkcKhc7hMwHSLrE7UvTZBY29ZAfc608FBIYSpVZAZCe7tH6TZAkExuC1ZCcg2psobZBnjxQcqyZCk6ZAEK6mxbiUPKuUOIhSwidTu1b1x0rEyNTFeSaTpWHwa92pAT61oHDZBDgU4xsXd8AoyaykpnUlIRPCExul0sa9xjXne4PZB0f3AVNg6dsPFET1VAAqhTI6CUKZAklypC1OVgNR87g2uTxU39CZCxysZD"
 graph = facebook.GraphAPI(access_token=access_token)
-print("Starting the post automation")
-count = 0
+
 for row in range(len(df)):
-    print(f'Trying to post instance {row}')
-    print(f"Will try to post in {df.Location[row]} group")
+    print(f'Post No. {row}')
     try:
         summary = df.Details[row]
         
@@ -58,23 +62,27 @@ for row in range(len(df)):
                 x = graph.put_object(groups[0], 'feed', message=message(df, row, summary))
                 print(x)
                 print("Posted Successfully in NY Group!")
-                count+=1
+                data_to_send = [datetime.now().date(), datetime.now().time(), df.JobID[row], df.Title[row], df.Company[row], df.Location[row], df.Apply_link[row]]  # Replace with your data
+                current_sheet.insert_row(data_to_send, 2)
             except Exception as error:
                 print("An exception occurred:", error)
-                #print(f"Passed the error and posted {df.JobID[row]}")
+                print(f"Passed the error and posted {df.JobID[row]}")
+		data_to_send = [datetime.now().date(), datetime.now().time(), df.JobID[row], df.Title[row], df.Company[row], df.Location[row], df.Apply_link[row]]  # Replace with your data
+                current_sheet.insert_row(data_to_send, 2)
         elif "TX" in df.Location[row]:
             try:
                 x = graph.put_object(groups[1], 'feed', message=message(df, row, summary))
                 print(x)
                 print("Posted Successfully in the TX Group!")
-                count+=1
+                data_to_send = [datetime.now().date(), datetime.now().time(), df.JobID[row], df.Title[row], df.Company[row], df.Location[row], df.Apply_link[row]]  # Replace with your data
+                current_sheet.insert_row(data_to_send, 2)
             except Exception as error:
                 print("An exception occurred:", error)
-                #print(f"Passed the error and posted {df.JobID[row]}")
+                print(f"Passed the error and posted {df.JobID[row]}")
     except Exception as error:
         print("An exception occurred:", error)
      
     
-    time.sleep(100)
+    time.sleep(10)
 
 print(f"Posted {count} posts.")
