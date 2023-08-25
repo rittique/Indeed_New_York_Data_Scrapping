@@ -11,6 +11,8 @@ KEY = "1nCT9zi1zic2SYKHsEMp9rm4rWA0bDTZcknXGWlZhrDc"
 
 workSheet = gc.open_by_key(KEY)
 
+current_sheet = workSheet.sheet1
+
 connection = MongoClient("mongodb://localhost:27017")
 db = connection.IndeedJobPostDB
 df = pd.DataFrame(list(db.Job_Posts.find()))
