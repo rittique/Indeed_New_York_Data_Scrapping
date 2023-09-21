@@ -17,39 +17,8 @@ from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
 import itertools
 
-chrome_options = Options()
+driver = uc.Chrome()
 
-PROXY = "" # HOST:PORT
-
-chrome_options = uc.ChromeOptions()
-chrome_options.add_argument(f'--proxy-server={PROXY}')
-
-drivers_dict={}   
-def scraping_function(link):
-    try:
-        thread_name= threading.current_thread().name
-            #sometime we are going to have different thread name in each iteration so a little regex might help
-        thread_name = re.sub("ThreadPoolExecutor-(\d*)_(\d*)", r"ThreadPoolExecutor-0_\2", thread_name)
-        print(f"re.sub -> {thread_name}")
-        driver = drivers_dict[thread_name]
-    except KeyError:
-        drivers_dict[threading.current_thread().name] = uc.Chrome(options=options,executable_path=PATH)
-        driver = drivers_dict[threading.current_thread().name]
-    driver.get(link)
-
-def driverConfig():
-    chrome_options = Options()
-
-    PROXY = "" # HOST:PORT
-
-    chrome_options = uc.ChromeOptions()
-    chrome_options.add_argument(f'--proxy-server={PROXY}')
-
-    driver = uc.Chrome(executable_path=r'chromedriver', options=chrome_options)
-
-    return driver
-
-driver = driverConfig()
 cities = ['New York, NY', 'Houston, TX']
 position = 'Restaurant'
 no_of_pages = 20
